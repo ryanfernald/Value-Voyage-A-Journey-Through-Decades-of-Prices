@@ -1,4 +1,5 @@
 from flask import Flask, render_template
+from src.functions.db import test_db_connection
 
 app = Flask(__name__)
 
@@ -59,6 +60,10 @@ def index():
         ]
     }
     return render_template('base.html', data=data)
+
+@app.route('/test_db_connection', methods=['GET'])
+def test_db_connection_page():
+    return test_db_connection()
 
 if __name__ == '__main__':
     app.run(debug=True)
