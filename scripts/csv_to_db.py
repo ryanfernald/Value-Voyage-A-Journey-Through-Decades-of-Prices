@@ -9,7 +9,6 @@ def process_csv(csv_path):
         'good name', 'good unit', 'source', 'price unit'
     ]
 
-    # Read and normalize the CSV
     df = pd.read_csv(csv_path)
     df.columns = [col.strip().lower() for col in df.columns]
 
@@ -17,7 +16,6 @@ def process_csv(csv_path):
     if missing_cols:
         raise ValueError(f"Missing required columns: {', '.join(missing_cols)}")
 
-    # Process monthly and year average columns
     month_columns = ['jan', 'feb', 'mar', 'apr', 'may', 'jun',
                      'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'year avg']
 
@@ -37,7 +35,6 @@ def process_csv(csv_path):
     melted['price'] = melted.apply(lambda row: convert_price(row, row['price']), axis=1)
     melted.drop('price unit', axis=1, inplace=True)
 
-    # Map month names to month numbers (for year avg, use July and day 2)
     month_map = {
         'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
         'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
@@ -55,11 +52,20 @@ def process_csv(csv_path):
     melted['date'] = melted.apply(lambda row: convert_month(row), axis=1)
     melted.drop('month', axis=1, inplace=True)
 
-    # Now perform a bulk insertion using the processed DataFrame.
     result = bulk_insert_good_price_entries(melted)
     print(result)
 
-# Example usage:
+
 if __name__ == "__main__":
-    csv_path = "../data/raw/sample_csv_upload_for_db.csv"  # Replace with your CSV file path
+    # csv file path. make sure it has required columns (case insensitive)
+    # columns required: [Year,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec,Year Avg,Good Name,Good Unit,Source,Price Unit]
+    # Year= year of data (int)
+    # [Jan...Dec]= price of good for a specific month of the year; can be None
+    # Year Avg= average price for that year. Shouldnt be None
+    # Good Name= name of the good (ex: eggs)
+    # Good Unit= measurement unit (oz/lbs/dozen/sqft...)
+    # Source= link to where data is coming from
+    # Price unit= 'cent'/'cents'/'dollar'/'dollars'
+
+    csv_path = "../data/raw/sample_csv_upload_for_db.csv"
     process_csv(csv_path)
