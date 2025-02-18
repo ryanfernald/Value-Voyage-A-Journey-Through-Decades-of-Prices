@@ -100,7 +100,6 @@ def bulk_insert_good_price_entries(df):
     for record in records:
         if pd.isna(record[1]):
             record[1] = None
-    print(records)
     try:
         connection = mysql.connector.connect(
             host=DB_HOST,
