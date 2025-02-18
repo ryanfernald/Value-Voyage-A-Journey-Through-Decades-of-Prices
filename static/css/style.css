@@ -3,6 +3,7 @@ html, body {
   margin: 0;
   scroll-behavior: smooth;
   font-family: Arial, sans-serif;
+  font-size: 60px;
 }
 
 .container {

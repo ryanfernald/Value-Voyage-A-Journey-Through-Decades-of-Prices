@@ -1,0 +1,5 @@
+Year,Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec,Year Avg,Good Name,Good Unit,Source,Price Unit
+2025,1,2,3,4,5,6,7,8,9,9,10,11,6.25,eggs,dozen,test_data,dollar
+2024,,,,,,,,,,,,,5,eggs,dozen,test_data,dollar
+2023,,,,,,,,,,,,,4,eggs,dozen,test_data,dollar
+2022,,,,,,,,,,,,,420,eggs,dozen,test_data,cent
