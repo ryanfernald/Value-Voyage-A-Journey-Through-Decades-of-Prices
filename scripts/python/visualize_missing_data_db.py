@@ -137,7 +137,7 @@ def plot_heatmap(matrix):
     plt.xticks(rotation=90, ha="center")
     plt.yticks(rotation=0)
 
-    output_filename = "heatmap.png"
+    output_filename = "../doc/diagrams/missing_data_heatmap.png"
     plt.savefig(output_filename, dpi=300, bbox_inches="tight")
     print(f"Heatmap saved as {output_filename}")
 
