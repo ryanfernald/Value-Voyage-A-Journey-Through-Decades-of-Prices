@@ -1,3 +1,6 @@
+import glob
+import os
+
 import pandas as pd
 from src.functions.db import bulk_insert_good_price_entries
 
@@ -107,5 +110,7 @@ if __name__ == "__main__":
     # Source= link to where data is coming from
     # Price unit= 'cent'/'cents'/'dollar'/'dollars'
 
-    csv_path = "../data/raw/sugar.csv"
-    process_csv(csv_path)
+    csv_dir_path = r"../data/raw/input_data_csv"
+    for csv_path in glob.glob(os.path.join(csv_dir_path, "*.csv")):
+        print(f"Processing {csv_path}")
+        process_csv(csv_path)
