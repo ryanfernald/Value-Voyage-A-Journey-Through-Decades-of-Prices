@@ -107,5 +107,5 @@ if __name__ == "__main__":
     # Source= link to where data is coming from
     # Price unit= 'cent'/'cents'/'dollar'/'dollars'
 
-    csv_path = "../data/raw/sample_csv_upload_for_db.csv"
+    csv_path = "../data/raw/sugar.csv"
     process_csv(csv_path)
