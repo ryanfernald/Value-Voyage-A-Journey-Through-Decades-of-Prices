@@ -149,4 +149,5 @@ if __name__ == "__main__":
 
     # Create a binary matrix of entries: 1 if record exists, 0 otherwise.
     matrix = create_binary_matrix(years, goods, july2_df)
-    plot_heatmap(matrix)
+    print(matrix)
+    # plot_heatmap(matrix)

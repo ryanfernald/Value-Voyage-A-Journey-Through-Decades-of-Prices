@@ -5,6 +5,9 @@ import mysql.connector
 from mysql.connector import Error
 import json
 import pandas as pd
+from datetime import date
+from decimal import Decimal
+import matplotlib.pyplot as plt
 
 # Load environment variables from .env
 load_dotenv()
@@ -170,6 +173,73 @@ def create_good_prices_table():
             connection.close()
 
 
+def fetch_good_prices(output_format='json'):
+    """
+    Retrieves all entries from the goods_prices table.
+
+    Returns:
+        A JSON-formatted string containing the retrieved data or an error message.
+    """
+    try:
+        connection = mysql.connector.connect(
+            host=DB_HOST,         # Defined in configuration
+            port=DB_PORT,         # Defined in configuration
+            user=DB_USER,         # Defined in configuration
+            password=DB_PASSWORD, # Defined in configuration
+            database=DB_NAME      # Defined in configuration
+        )
+        if connection.is_connected():
+            cursor = connection.cursor(dictionary=True)  # Fetch results as dictionaries
+            fetch_query = """
+                SELECT * FROM goods_prices
+                WHERE MONTH(date) = 7
+                AND DAY(date) = 2
+                ORDER BY date ASC;
+              """
+            cursor.execute(fetch_query)
+            results = cursor.fetchall()
+
+            # Convert date and Decimal fields to JSON-serializable types
+            for row in results:
+                for key, value in row.items():
+                    if isinstance(value, date):
+                        row[key] = value.isoformat()  # Convert date to 'YYYY-MM-DD'
+                    elif isinstance(value, Decimal):
+                        row[key] = float(value)  # Convert Decimal to float
+
+            if output_format == "df":
+                df = pd.DataFrame(results)
+                df['date'] = pd.to_datetime(df['date'])
+                df_pivot = df.pivot(index='name', columns='date', values='price')
+                df_pivot = df_pivot.transpose()
+                return df_pivot
+            elif output_format == "json":
+                return results  # Convert result to JSON
+            else:
+                raise(ValueError, "Output formats supported: (df/json)")
+    except mysql.connector.Error as e:
+        return json.dumps({"error": str(e)})
+    finally:
+        if 'connection' in locals() and connection.is_connected():
+            cursor.close()
+            connection.close()
+
+
+
+
 if __name__ == "__main__":
-    result = create_good_prices_table()
-    print(json.dumps(result, indent=4))
+    # result = create_good_prices_table()
+    result = fetch_good_prices(output_format="df")
+
+    plt.figure(figsize=(12, 6))
+    for column in result.columns:
+        plt.plot(result.index, result[column], label=column)
+
+    plt.xlabel("Date")
+    plt.ylabel("Price ($)")
+    plt.title("Price Trends Over Time")
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+    plt.grid(True)
+    plt.xticks(rotation=45)
+    plt.show()
+    print(result)
