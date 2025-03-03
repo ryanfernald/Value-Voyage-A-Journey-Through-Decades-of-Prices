@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Price Graph</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1 style="text-align: center;">Price Trends Over Time</h1>
+
+    <!-- Checkbox Section -->
+    <div style="text-align: center; margin-bottom: 20px;">
+        {% for item in item_names %}
+            <label>
+                <input type="checkbox" class="item-checkbox" value="{{ item }}" checked> {{ item }}
+            </label>
+        {% endfor %}
+    </div>
+
+    <!-- Graph Container -->
+    <div id="graph-container">
+        {{ graph_html | safe }} <!-- Initial graph loaded from Flask -->
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            function updateGraph() {
+                let selectedItems = [];
+                document.querySelectorAll(".item-checkbox:checked").forEach(checkbox => {
+                    selectedItems.push(checkbox.value);
+                });
+
+                if (selectedItems.length === 0) {
+                    alert("At least one item must be selected.");
+                    return;
+                }
+
+                console.log("Sending selected items to update_graph:", selectedItems);
+
+                fetch("/update_graph", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ selected_items: selectedItems })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Response from server:", data); // 🔍 Debugging log
+                    if (data.graph_html) {
+                        document.getElementById("graph-container").innerHTML = data.graph_html;
+                    } else {
+                        console.error("Error in response:", data.error || "No graph_html received.");
+                    }
+                })
+                .catch(error => console.error("Fetch error:", error));
+            }
+
+            // Attach event listeners to checkboxes
+            document.querySelectorAll(".item-checkbox").forEach(checkbox => {
+                checkbox.addEventListener("change", updateGraph);
+            });
+
+            // Initial graph update when page loads
+            updateGraph();
+        });
+    </script>
+</body>
+</html>
