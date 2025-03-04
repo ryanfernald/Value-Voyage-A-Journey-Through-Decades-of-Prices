@@ -1,7 +1,10 @@
 from flask import Flask, render_template, request, jsonify
 import plotly.express as px
+import plotly.graph_objs as go
+import plotly.io as pio
 import pandas as pd
 import logging
+import json
 from src.functions.db import fetch_good_prices
 
 app = Flask(__name__)
@@ -36,7 +39,7 @@ def create_plot(selected_items=None):
         labels={"date": "Year", "price": "Price ($)"}
     )
 
-    fig.update_layout(width=1200, height=600)  # Increase figure size
+    fig.update_layout(width=1600, height=600)  # Increase figure size
 
     return fig.to_html(full_html=False)
 
@@ -57,24 +60,33 @@ def price_graph():
     
     return render_template("price_graph.html", item_names=item_names, graph_html=initial_graph)
 
+
 @app.route('/update_graph', methods=['POST'])
 def update_graph():
-    """Update the graph based on selected checkboxes."""
-    selected_items = request.json.get('selected_items', [])
-
-    if not selected_items:
-        logging.warning("No items selected, defaulting to 'All'.")
-        selected_items = ["All"]
-
-    logging.debug(f"Received update_graph request with selected_items: {selected_items}")
-
     try:
-        graph_html = create_plot(selected_items)
-        logging.debug("Graph successfully generated!")
-        return jsonify(graph_html=graph_html)
+        data = request.get_json()
+        selected_items = data.get("selected_items", [])
+
+        if not selected_items:
+            return jsonify({"error": "No items selected."}), 400
+
+        db_data = fetch_good_prices(output_format="df")
+
+        if isinstance(db_data, str):
+            return jsonify({"error": db_data}), 500
+
+        filtered_df = db_data[selected_items] if selected_items else db_data
+
+        fig = go.Figure()
+        for item in filtered_df.columns:
+            fig.add_trace(go.Scatter(x=filtered_df.index, y=filtered_df[item], mode='lines', name=item))
+
+        fig.update_layout(title="Price Trends Over Time", xaxis_title="Date", yaxis_title="Price ($)")
+
+        return jsonify({"graph_json": fig.to_json()})
+
     except Exception as e:
-        logging.error(f"Error generating graph: {e}")
-        return jsonify(error=str(e)), 500
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
