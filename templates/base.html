@@ -29,22 +29,23 @@
     {% endfor %}
 
 
-    <!-- Graph -->
-    <section id="interactive_graph" class="section">
-      <h2>Interactive Graph</h2>
-      <p>crazy ass graph</p>
+    <!-- Interactive Graph Section -->
+    <section id="graph_slide" class="section">
+      <h2>Price Trends Over Time</h2>
+      <div id="plotly-graph">
+        {{ graph | safe }}
+      </div>
     </section>
 
     <!-- Final Information Section -->
-    <section id="final" class="section">
-      <h2>Final Information</h2>
-      <p>Here are some sample links:</p>
-      <ul>
-        <li><a href="https://example.com/link1" target="_blank">Sample Link 1</a></li>
-        <li><a href="https://example.com/link2" target="_blank">Sample Link 2</a></li>
-      </ul>
-    </section>
-  </div>
+<section id="final" class="section">
+  <h2>Final Information</h2>
+  <p>Here are some sample links:</p>
+  <ul>
+    <li><a href="{{ url_for('price_graph') }}" target="_blank">View Price Graph</a></li>
+    <li><a href="https://example.com/link2" target="_blank">Sample Link 2</a></li>
+  </ul>
+</section>
 
   <!-- JavaScript for Scroll-triggered Animation -->
   <script>
