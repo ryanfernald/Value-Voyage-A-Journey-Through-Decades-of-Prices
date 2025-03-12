@@ -45,9 +45,14 @@
                 })
                 .then(response => response.json())
                 .then(data => {
-                    console.log("Response from server:", data); // 🔍 Debugging log
+                    console.log("Response from server:", data);
                     if (data.graph_html) {
-                        document.getElementById("graph-container").innerHTML = data.graph_html;
+                        let graphContainer = document.getElementById("graph-container");
+                        graphContainer.innerHTML = ""; // Clear old content
+
+                        let div = document.createElement("div");
+                        graphContainer.appendChild(div);
+                        Plotly.newPlot(div, JSON.parse(data.graph_json));  // Use JSON, not raw HTML
                     } else {
                         console.error("Error in response:", data.error || "No graph_html received.");
                     }
@@ -55,12 +60,10 @@
                 .catch(error => console.error("Fetch error:", error));
             }
 
-            // Attach event listeners to checkboxes
             document.querySelectorAll(".item-checkbox").forEach(checkbox => {
                 checkbox.addEventListener("change", updateGraph);
             });
 
-            // Initial graph update when page loads
             updateGraph();
         });
     </script>
