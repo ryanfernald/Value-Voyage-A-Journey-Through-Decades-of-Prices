@@ -372,25 +372,31 @@ def bulk_insert_incomes(df):
             connection.close()
 
 
-def get_final_goods_affordable_quantity(final_goods, year, income_interval='annual'):
+def get_final_goods_affordable_quantity(final_goods, start_year, end_year, income_interval='annual', output_format='json'):
     """
-    Calculates how many units of each final good can be afforded based on the average income of a given year.
+    Calculates how many units of each final good can be afforded for each year in the given range
+    based on the average income of each year.
 
     Parameters:
         final_goods (list): A list of good names (strings) for which prices will be queried.
-        year (int): The year for which the average income is retrieved and good prices are considered.
+        start_year (int): The starting year for the analysis.
+        end_year (int): The ending year for the analysis.
         income_interval (str): Specifies the salary frequency. Use 'annual' for the full annual salary
                                (default) or 'monthly' to use the monthly salary (annual salary divided by 12).
+        output_format (str): Format of the output. Use 'json' (default) for a dictionary output or 'df'
+                             for a pandas DataFrame in long format.
 
     Returns:
-        dict: A dictionary mapping each good to a dictionary containing:
-              - "quantity": The affordable quantity (average_income / price) as an integer.
-              - "unit": The unit extracted from the good_unit field.
-              If a good's price data is missing or invalid, its value will be set to None.
+        dict or DataFrame: If output_format is 'json', returns a dictionary mapping each good to another
+                           dictionary mapping each year to a dictionary containing:
+                             - "quantity": The affordable quantity (average_income / price) as an integer.
+                             - "unit": The unit extracted from the good_unit field.
+                           If output_format is 'df', returns a pandas DataFrame in long format with columns:
+                           ['year', 'good', 'quantity', 'unit'].
     """
-    goods_affordable_quantity = {}
+    goods_affordable = {}
     try:
-        # Establish a database connection using credentials from environment variables
+        # Establish database connection
         connection = mysql.connector.connect(
             host=DB_HOST,
             port=DB_PORT,
@@ -400,56 +406,79 @@ def get_final_goods_affordable_quantity(final_goods, year, income_interval='annu
         )
         cursor = connection.cursor()
 
-        # Retrieve the average income for the specified year.
+        # Fetch incomes for all years in the range.
         income_query = """
-            SELECT average_income_unadjusted
+            SELECT year, average_income_unadjusted
             FROM incomes
-            WHERE year = %s
-            LIMIT 1;
+            WHERE year BETWEEN %s AND %s;
         """
-        cursor.execute(income_query, (year,))
-        income_row = cursor.fetchone()
-        if not income_row:
-            raise ValueError("No income data found for year {}".format(year))
-        average_income = income_row[0]
+        cursor.execute(income_query, (start_year, end_year))
+        incomes_data = cursor.fetchall()
+        # Build a mapping: year -> adjusted average income
+        incomes = {}
+        for row in incomes_data:
+            yr, income = row
+            if income is None:
+                continue
+            if income_interval.lower() == 'monthly':
+                income = income / 12
+            elif income_interval.lower() != 'annual':
+                raise ValueError("Invalid income_interval. Use 'annual' or 'monthly'.")
+            incomes[yr] = income
 
-        # Adjust the average income based on the income_interval parameter.
-        if income_interval.lower() == "monthly":
-            average_income = average_income / 12
-        elif income_interval.lower() != "annual":
-            raise ValueError("Invalid income_interval. Use 'annual' or 'monthly'.")
+        # Prepare placeholders for final_goods list in the IN clause.
+        goods_placeholders = ','.join(['%s'] * len(final_goods))
+        price_query = f"""
+            SELECT name, YEAR(date) AS yr, price, good_unit
+            FROM goods_prices
+            WHERE name IN ({goods_placeholders})
+              AND MONTH(date) = 7
+              AND DAY(date) = 2
+              AND YEAR(date) BETWEEN %s AND %s;
+        """
+        params = tuple(final_goods) + (start_year, end_year)
+        cursor.execute(price_query, params)
+        prices_data = cursor.fetchall()
 
-        # For each final good, retrieve its price and unit, then compute the affordable quantity.
+        # Build a mapping: (good, year) -> (price, good_unit)
+        prices = {}
+        for row in prices_data:
+            name, yr, price, good_unit = row
+            prices[(name, yr)] = (price, good_unit)
+
+        # Build result dictionary.
+        # For each good, for each year in the range, calculate affordable quantity if data exists.
         for good in final_goods:
-            price_query = """
-                SELECT price, good_unit
-                FROM goods_prices
-                WHERE name = %s 
-                  AND MONTH(date) = 7 
-                  AND DAY(date) = 2 
-                  AND YEAR(date) = %s
-                LIMIT 1;
-            """
-            cursor.execute(price_query, (good, year))
-            price_row = cursor.fetchone()
-            if not price_row:
-                goods_affordable_quantity[good] = None
-            else:
-                price, good_unit = price_row
-                if price <= 0:
-                    goods_affordable_quantity[good] = None
+            goods_affordable[good] = {}
+            for yr in range(start_year, end_year + 1):
+                if yr not in incomes:
+                    goods_affordable[good][yr] = None
+                    continue
+
+                income_for_year = incomes[yr]
+                key = (good, yr)
+                if key not in prices:
+                    goods_affordable[good][yr] = None
+                    continue
+
+                price, good_unit = prices[key]
+                if price is None or price <= 0:
+                    goods_affordable[good][yr] = None
+                    continue
+
+                affordable_quantity = int(income_for_year / price)
+                # Extract the unit after '/' if available, otherwise use the entire string.
+                if isinstance(good_unit, str) and '/' in good_unit:
+                    parts = good_unit.split('/')
+                    unit = parts[1].strip() if len(parts) > 1 else good_unit
                 else:
-                    affordable_quantity = int(average_income / price)
-                    # Extract the unit after '/' if available, otherwise use the whole string.
-                    if '/' in good_unit:
-                        parts = good_unit.split('/')
-                        unit = parts[1].strip() if len(parts) > 1 else good_unit
-                    else:
-                        unit = good_unit
-                    goods_affordable_quantity[good] = {
-                        "quantity": affordable_quantity,
-                        "unit": unit
-                    }
+                    unit = good_unit
+
+                goods_affordable[good][yr] = {
+                    "quantity": affordable_quantity,
+                    "unit": unit
+                }
+
     except mysql.connector.Error as e:
         print("Database error:", e)
         return None
@@ -461,8 +490,62 @@ def get_final_goods_affordable_quantity(final_goods, year, income_interval='annu
             cursor.close()
             connection.close()
 
-    return goods_affordable_quantity
+    # Return output in desired format.
+    if output_format.lower() == 'df':
+        import pandas as pd
+        # Create a DataFrame in long format.
+        rows = []
+        for good, year_data in goods_affordable.items():
+            for yr in range(start_year, end_year + 1):
+                entry = year_data.get(yr)
+                if entry is None:
+                    rows.append({'year': yr, 'good': good, 'quantity': None, 'unit': None})
+                else:
+                    rows.append({
+                        'year': yr,
+                        'good': good,
+                        'quantity': entry.get("quantity"),
+                        'unit': entry.get("unit")
+                    })
+        df = pd.DataFrame(rows)
+        return df
 
+    return goods_affordable
+
+
+import matplotlib.pyplot as plt
+import pandas as pd
 
 if __name__ == "__main__":
-    print(get_final_goods_affordable_quantity(['bacon'], 1970, "monthly"))
+    # Assume get_final_goods_affordable_quantity is already defined and imported.
+    # Retrieve the DataFrame in long format.
+    df = get_final_goods_affordable_quantity(
+        ['bacon', 'bread', 'butter', 'coffee', 'eggs', 'flour', 'milk', 'pork chop', 'round steak', 'sugar'],
+        1900, 2000,
+        "monthly",
+        output_format='df'
+    )
+    print(df)
+
+    plt.figure(figsize=(20, 10))
+
+    # If the DataFrame contains data for only one year, use a bar chart.
+    if df['year'].nunique() == 1:
+        plt.bar(df['good'], df['quantity'])
+        plt.xlabel("Good")
+        plt.ylabel("Affordable Quantity")
+        plt.title(f"Affordable Quantity in {df['year'].iloc[0]}")
+    else:
+        # For multiple years, plot a line for each good.
+        for good, group in df.groupby('good'):
+            plt.plot(group['year'], group['quantity'], marker='o', label=good)
+        plt.xlabel("Year")
+        plt.ylabel("Affordable Quantity")
+        plt.title("Affordable Quantity Over Years")
+        plt.legend()
+
+    # Save the graph as a PNG file.
+    plt.savefig("../../doc/figures/affordable_quantity.png")
+
+    plt.show()
+
