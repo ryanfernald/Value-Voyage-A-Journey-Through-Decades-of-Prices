@@ -521,10 +521,64 @@ def get_final_goods_affordable_quantity(final_goods, start_year, end_year, incom
     return goods_affordable
 
 
+def fetch_incomes_data(start_year, end_year, income_data_source):
+    """
+    Fetches income data for the given data source (IRS or BEA) for the United States.
+    """
+    connection = mysql.connector.connect(
+        host=DB_HOST,
+        port=DB_PORT,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        database=DB_NAME
+    )
+    cursor = connection.cursor()
+    income_query = """
+        SELECT year, average_income_unadjusted
+        FROM incomes
+        WHERE year BETWEEN %s AND %s
+          AND source_name = %s
+          AND region = 'united states'
+        ORDER BY year;
+    """
+    cursor.execute(income_query, (start_year, end_year, income_data_source))
+    data = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return data
+
+def compare_income_data_sources(start_year=1913, end_year=2023):
+    sources = ['IRS', 'BEA']
+
+    plt.figure(figsize=(12, 6))
+
+    for source in sources:
+        data = fetch_incomes_data(start_year, end_year, source)
+        if data:
+            # Unpack fetched data into separate lists.
+            years, incomes = zip(*data)
+            plt.plot(years, incomes, marker='o', label=source)
+        else:
+            print(f"No data found for {source} between {start_year} and {end_year}.")
+
+    plt.xlabel("Year")
+    plt.ylabel("Average Income Unadjusted")
+    plt.title("United States Incomes (IRS vs. BEA)")
+    plt.legend()
+    plt.grid(True)
+
+    # Set the y-axis to logarithmic scale.
+    plt.yscale('log')
+
+    # Save the plot to a file.
+    plt.savefig("../../doc/figures/compare_income_data_sources.png")
+    plt.show()
+
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
-if __name__ == "__main__":
+def plot_incomes_inf_final_goods():
     # Assume get_final_goods_affordable_quantity is already defined and imported.
     # Retrieve the DataFrame in long format.
     df = get_final_goods_affordable_quantity(
@@ -558,3 +612,7 @@ if __name__ == "__main__":
 
     plt.show()
 
+
+if __name__ == "__main__":
+    # plot_incomes_inf_final_goods()
+    compare_income_data_sources()
