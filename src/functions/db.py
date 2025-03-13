@@ -278,6 +278,7 @@ def fetch_good_price(good_name, year, output_format='json'):
             cursor.close()
             connection.close()
 
+
 def create_incomes_table():
     """
     Creates the 'incomes' table with columns:
@@ -415,7 +416,9 @@ def get_final_goods_affordable_quantity(final_goods, start_year, end_year, incom
         income_query = """
             SELECT year, average_income_unadjusted
             FROM incomes
-            WHERE year BETWEEN %s AND %s;
+            WHERE year BETWEEN %s AND %s
+            AND source_name='BEA'
+            AND region='united states';
         """
         cursor.execute(income_query, (start_year, end_year))
         incomes_data = cursor.fetchall()
@@ -526,7 +529,7 @@ if __name__ == "__main__":
     # Retrieve the DataFrame in long format.
     df = get_final_goods_affordable_quantity(
         ['bacon', 'bread', 'butter', 'coffee', 'eggs', 'flour', 'milk', 'pork chop', 'round steak', 'sugar'],
-        1900, 2000,
+        1929, 2023,
         "monthly",
         output_format='df'
     )
@@ -550,7 +553,7 @@ if __name__ == "__main__":
         plt.legend()
 
     # Save the graph as a PNG file.
-    plt.savefig("../../doc/figures/affordable_quantity.png")
+    plt.savefig("../../doc/figures/affordable_quantity_bea_incomes.png")
 
     plt.show()
 
