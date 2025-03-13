@@ -278,7 +278,6 @@ def fetch_good_price(good_name, year, output_format='json'):
             cursor.close()
             connection.close()
 
-
 def create_incomes_table():
     """
     Creates the 'incomes' table with columns:
@@ -286,7 +285,10 @@ def create_incomes_table():
         - inflation_cpi (DECIMAL)
         - tax_units (INTEGER)
         - average_income_unadjusted (DECIMAL)
-        - source (VARCHAR)
+        - average_income_adjusted (DECIMAL)
+        - source_link (VARCHAR)
+        - source_name (VARCHAR)
+        - region (VARCHAR)
 
     Returns:
         A dictionary indicating success or error.
@@ -308,14 +310,16 @@ def create_incomes_table():
                     tax_units INT,
                     average_income_unadjusted DECIMAL(20,10),
                     average_income_adjusted DECIMAL(20,10),
-                    source VARCHAR(255),
-                    PRIMARY KEY (year, source)
+                    source_name VARCHAR(255),
+                    source_link VARCHAR(511),
+                    region VARCHAR(255),
+                    PRIMARY KEY (year, source_name, region)
                 );
             """
             cursor.execute(create_table_query)
             connection.commit()
             return {"result": "Table 'incomes' created successfully."}
-    except Error as e:
+    except mysql.connector.Error as e:
         return {"error": str(e)}
     finally:
         if 'connection' in locals() and connection.is_connected():
@@ -326,21 +330,15 @@ def create_incomes_table():
 def bulk_insert_incomes(df):
     """
     Performs a bulk insertion of income entries into the incomes table.
-
-    Parameters:
-        df (DataFrame): A DataFrame containing the following columns:
-            'year', 'inflation-cpi', 'tax-units', 'average-income-unadjusted', 'source'
-
-    Returns:
-        A JSON-formatted string indicating success or error.
     """
-    records = df[['year', 'inflation_cpi', 'tax_units', 'average_income_unadjusted', 'average_income_adjusted', 'source']].values.tolist()
+    create_incomes_table()
+    # Create list of records from required columns.
+    records = df[['year', 'inflation_cpi', 'tax_units',
+                  'average_income_unadjusted', 'average_income_adjusted',
+                  'source_link', 'source_name', 'region']].values.tolist()
 
-    for record in records:
-        # Handle any NaN values in numeric columns
-        for i in range(len(record)):
-            if pd.isna(record[i]):
-                record[i] = None
+    # Convert any NaN values to None for SQL compatibility.
+    records = [[None if pd.isna(value) else value for value in record] for record in records]
 
     try:
         connection = mysql.connector.connect(
@@ -353,18 +351,25 @@ def bulk_insert_incomes(df):
         if connection.is_connected():
             cursor = connection.cursor()
             insert_query = """
-                INSERT INTO incomes (year, inflation_cpi, tax_units, average_income_unadjusted, average_income_adjusted, source)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO incomes 
+                    (year, inflation_cpi, tax_units, average_income_unadjusted, 
+                     average_income_adjusted, source_link, source_name, region)
+                VALUES 
+                    (%s, %s, %s, %s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE
                     inflation_cpi = VALUES(inflation_cpi),
                     tax_units = VALUES(tax_units),
                     average_income_unadjusted = VALUES(average_income_unadjusted),
                     average_income_adjusted = VALUES(average_income_adjusted);
             """
+            # Bulk insert using executemany.
             cursor.executemany(insert_query, records)
             connection.commit()
-            return json.dumps({"result": f"{cursor.rowcount} records inserted/updated successfully."})
-    except Error as e:
+            successful_inserts = cursor.rowcount
+            return json.dumps({
+                "result": f"{successful_inserts} records inserted/updated successfully out of {len(records)}."
+            })
+    except mysql.connector.Error as e:
         return json.dumps({"error": str(e)})
     finally:
         if 'connection' in locals() and connection.is_connected():
