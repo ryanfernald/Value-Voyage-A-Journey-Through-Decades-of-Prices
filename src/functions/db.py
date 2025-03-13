@@ -582,10 +582,10 @@ def plot_incomes_inf_final_goods():
     # Assume get_final_goods_affordable_quantity is already defined and imported.
     # Retrieve the DataFrame in long format.
     df = get_final_goods_affordable_quantity(
-        ['bacon', 'bread', 'butter', 'coffee', 'eggs', 'flour', 'milk', 'pork chop', 'round steak', 'sugar'],
-        1929, 1998,
+        ['bacon', 'butter', 'coffee', 'milk', 'pork chop', 'round steak'],
+        1929, 2023,
         "monthly",
-        income_data_source='IRS',
+        income_data_source='BEA',
         output_format='df'
     )
     print(df)
@@ -604,15 +604,15 @@ def plot_incomes_inf_final_goods():
             plt.plot(group['year'], group['quantity'], marker='o', label=good)
         plt.xlabel("Year")
         plt.ylabel("Affordable Quantity")
-        plt.title("Affordable Quantity Over Years IRS")
+        plt.title("Affordable Quantity Over Years BEA")
         plt.legend()
 
     # Save the graph as a PNG file.
-    plt.savefig("../../doc/figures/affordable_quantity_irs_1929_1998_incomes.png")
+    plt.savefig("../../doc/figures/affordable_quantity_bea_low_1929_2023_incomes.png")
 
     plt.show()
 
 
 if __name__ == "__main__":
-    # plot_incomes_inf_final_goods()
-    compare_income_data_sources()
+    plot_incomes_inf_final_goods()
+    # compare_income_data_sources()
