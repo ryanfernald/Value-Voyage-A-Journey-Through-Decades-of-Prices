@@ -378,7 +378,7 @@ def bulk_insert_incomes(df):
             connection.close()
 
 
-def get_final_goods_affordable_quantity(final_goods, start_year, end_year, income_interval='annual', output_format='json'):
+def get_final_goods_affordable_quantity(final_goods, start_year, end_year, income_interval='annual', income_data_source="BEA", output_format='json'):
     """
     Calculates how many units of each final good can be afforded for each year in the given range
     based on the average income of each year.
@@ -417,10 +417,10 @@ def get_final_goods_affordable_quantity(final_goods, start_year, end_year, incom
             SELECT year, average_income_unadjusted
             FROM incomes
             WHERE year BETWEEN %s AND %s
-            AND source_name='BEA'
+            AND source_name=%s
             AND region='united states';
         """
-        cursor.execute(income_query, (start_year, end_year))
+        cursor.execute(income_query, (start_year, end_year, income_data_source))
         incomes_data = cursor.fetchall()
         # Build a mapping: year -> adjusted average income
         incomes = {}
@@ -529,8 +529,9 @@ if __name__ == "__main__":
     # Retrieve the DataFrame in long format.
     df = get_final_goods_affordable_quantity(
         ['bacon', 'bread', 'butter', 'coffee', 'eggs', 'flour', 'milk', 'pork chop', 'round steak', 'sugar'],
-        1929, 2023,
+        1929, 1998,
         "monthly",
+        income_data_source='IRS',
         output_format='df'
     )
     print(df)
@@ -549,11 +550,11 @@ if __name__ == "__main__":
             plt.plot(group['year'], group['quantity'], marker='o', label=good)
         plt.xlabel("Year")
         plt.ylabel("Affordable Quantity")
-        plt.title("Affordable Quantity Over Years")
+        plt.title("Affordable Quantity Over Years IRS")
         plt.legend()
 
     # Save the graph as a PNG file.
-    plt.savefig("../../doc/figures/affordable_quantity_bea_incomes.png")
+    plt.savefig("../../doc/figures/affordable_quantity_irs_1929_1998_incomes.png")
 
     plt.show()
 
