@@ -547,23 +547,23 @@ def fetch_incomes_data(start_year, end_year, income_data_source):
     connection.close()
     return data
 
-def compare_income_data_sources(start_year=1913, end_year=2023):
-    sources = ['IRS', 'BEA']
+def compare_income_data_sources(start_year=1913, end_year=2024):
+    sources = ['IRS', 'BEA', 'FRED']
 
     plt.figure(figsize=(12, 6))
 
-    for source in sources:
+    for source, marker in zip(sources, [".", "+", "x"]):
         data = fetch_incomes_data(start_year, end_year, source)
         if data:
             # Unpack fetched data into separate lists.
             years, incomes = zip(*data)
-            plt.plot(years, incomes, marker='o', label=source)
+            plt.plot(years, incomes, marker=marker, label=source)
         else:
             print(f"No data found for {source} between {start_year} and {end_year}.")
 
     plt.xlabel("Year")
     plt.ylabel("Average Income Unadjusted")
-    plt.title("United States Incomes (IRS vs. BEA)")
+    plt.title("United States Incomes (IRS vs. BEA vs FRED)")
     plt.legend()
     plt.grid(True)
 
@@ -571,7 +571,7 @@ def compare_income_data_sources(start_year=1913, end_year=2023):
     plt.yscale('log')
 
     # Save the plot to a file.
-    plt.savefig("../../doc/figures/compare_income_data_sources.png")
+    plt.savefig("../../doc/figures/compare_income_data_sources_2.png")
     plt.show()
 
 
@@ -579,8 +579,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 def plot_incomes_inf_final_goods():
-    # Assume get_final_goods_affordable_quantity is already defined and imported.
-    # Retrieve the DataFrame in long format.
     df = get_final_goods_affordable_quantity(
         # ['bacon', 'butter', 'coffee', 'milk', 'pork chop', 'round steak'],
         ['bacon', 'bread', 'butter', 'coffee', 'eggs', 'flour', 'milk', 'pork chop', 'round steak', 'sugar'],
@@ -615,5 +613,6 @@ def plot_incomes_inf_final_goods():
 
 
 if __name__ == "__main__":
-    plot_incomes_inf_final_goods()
+    # plot_incomes_inf_final_goods()
     # compare_income_data_sources()
+    compare_income_data_sources()
