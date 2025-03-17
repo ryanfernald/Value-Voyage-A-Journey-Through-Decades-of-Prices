@@ -1,4 +1,4 @@
-# pages/landing.py
+import dash
 from dash import dcc, html
 
 layout = html.Div([

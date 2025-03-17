@@ -21,7 +21,7 @@ layout = dbc.Container(
                     dbc.Col(
                         dbc.Card(
                             [
-                                dbc.CardImg(src="/assets/income_indequality_washingtonpost.png", top=True),
+                                dbc.CardImg(src="/static/assets/income_indequality_washingtonpost.png", top=True),
                                 dbc.CardBody(
                                     [
                                         html.H4("Learn More about our Motivation", className="card-title"),
@@ -45,7 +45,7 @@ layout = dbc.Container(
                 dbc.Col(
                     dbc.Card(
                         [
-                            dbc.CardImg(src="/assets/housing_crash.jpg", top=True),
+                            dbc.CardImg(src="/static/assets/housing_crash.jpg", top=True),
                             dbc.CardBody(
                                 [
                                     html.H4("Our Take on Inflation", className="card-title"),
@@ -90,7 +90,7 @@ layout = dbc.Container(
                 dbc.Col(
                     dbc.Card(
                         [
-                            dbc.CardImg(src="/assets/history_tax_returns.jpg", top=True),
+                            dbc.CardImg(src="/static/assets/history_tax_returns.jpg", top=True),
                             dbc.CardBody(
                                 [
                                     html.H4("Notes on Some of the Limitations behind the data", className="card-title"),
@@ -113,7 +113,7 @@ layout = dbc.Container(
                 dbc.Col(
                     dbc.Card(
                         [
-                            dbc.CardImg(src="/assets/inflation.png", top=True),
+                            dbc.CardImg(src="/static/assets/inflation.png", top=True),
                             dbc.CardBody(
                                 [
                                     html.H4("Check out our Analysis Page", className="card-title"),

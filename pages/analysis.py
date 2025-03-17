@@ -5,115 +5,112 @@ import pandas as pd
 import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
 
-# Goods Graph
-goods = pd.read_csv("https://raw.githubusercontent.com/ryanfernald/Value-Voyage-A-Journey-Through-Decades-of-Prices/refs/heads/main/data/good-prices.csv")
-goods = goods.sort_values("Date", ascending=True)
 
-# Create the graph
-goods_prices_graph = go.Figure()
+# Define the Goods Prices Graph as a function
+def get_goods_prices_graph():
+    goods = pd.read_csv("https://raw.githubusercontent.com/ryanfernald/Value-Voyage-A-Journey-Through-Decades-of-Prices/refs/heads/main/data/good-prices.csv")
+    goods = goods.sort_values("Date", ascending=True)
 
-for good_name in goods["Good Name"].unique():
-    filtered_data = goods[goods["Good Name"] == good_name]
-    goods_prices_graph.add_trace(go.Scatter(
-        x=filtered_data["Date"], 
-        y=filtered_data["Price"], 
-        mode="lines",  
-        name=good_name  
-    ))
+    goods_prices_graph = go.Figure()
 
-goods_prices_graph.update_layout(
-    title="Price Trends Over Time",
-    xaxis_title="Date",
-    yaxis_title="Price",
-    title_font_size=16,
-    xaxis=dict(tickangle=45), 
-    hovermode="x unified"  
-)
-# End Goods Graphs
+    for good_name in goods["Good Name"].unique():
+        filtered_data = goods[goods["Good Name"] == good_name]
+        goods_prices_graph.add_trace(go.Scatter(
+            x=filtered_data["Date"], 
+            y=filtered_data["Price"], 
+            mode="lines",  
+            name=good_name  
+        ))
+
+    goods_prices_graph.update_layout(
+        title="Price Trends Over Time",
+        xaxis_title="Date",
+        yaxis_title="Price",
+        title_font_size=16,
+        xaxis=dict(tickangle=45), 
+        hovermode="x unified"  
+    )
+    return goods_prices_graph
 
 
-# Start Income Average Graph
-income = pd.read_csv("https://raw.githubusercontent.com/ryanfernald/Value-Voyage-A-Journey-Through-Decades-of-Prices/refs/heads/main/data/income1913-1998.csv")
+# Define the Income Average Graph as a function
+def get_income_averages_graph():
+    income = pd.read_csv("https://raw.githubusercontent.com/ryanfernald/Value-Voyage-A-Journey-Through-Decades-of-Prices/refs/heads/main/data/income1913-1998.csv")
 
-income_graph_fig = go.Figure()
+    income_graph_fig = go.Figure()
 
-income_graph_fig.add_trace(go.Scatter(x=income["year"], y=income["tax-units"],
-                         mode='lines+markers',
-                         name="Tax Units"))
+    income_graph_fig.add_trace(go.Scatter(x=income["year"], y=income["tax-units"],
+                             mode='lines+markers',
+                             name="Tax Units"))
 
-income_graph_fig.add_trace(go.Scatter(x=income["year"], y=income["Average Income Adjusted $ 1998"],
-                         mode='lines+markers',
-                         name="Avg Income Adjusted (1998 $)"))
+    income_graph_fig.add_trace(go.Scatter(x=income["year"], y=income["Average Income Adjusted $ 1998"],
+                             mode='lines+markers',
+                             name="Avg Income Adjusted (1998 $)"))
 
-income_graph_fig.add_trace(go.Scatter(x=income["year"], y=income["Income Unadjusted"],
-                         mode='lines+markers',
-                         name="Income Unadjusted"))
+    income_graph_fig.add_trace(go.Scatter(x=income["year"], y=income["Income Unadjusted"],
+                             mode='lines+markers',
+                             name="Income Unadjusted"))
 
-income_graph_fig.update_layout(
-    title="Income Trends Over Years",
-    xaxis_title="Year",
-    yaxis_title="Income / Tax Units",
-    template="plotly_white",
-    hovermode="x"
-)
-# End Income Average Graph 
+    income_graph_fig.update_layout(
+        title="Income Trends Over Years",
+        xaxis_title="Year",
+        yaxis_title="Income / Tax Units",
+        template="plotly_white",
+        hovermode="x"
+    )
+    return income_graph_fig
 
-# Start Income Shares By Percentage Graph
-columns_to_plot = [
-    "P90-100", "P90-95", "P95-99", "P99-100",
-    "P99.5-100", "P99.9-100", "P99.99-100"
-]
 
-# Create figure
-income_shares = go.Figure()
+# Define the Income Shares By Percentage Graph as a function
+def get_income_shares_graph():
+    income = pd.read_csv("https://raw.githubusercontent.com/ryanfernald/Value-Voyage-A-Journey-Through-Decades-of-Prices/refs/heads/main/data/income1913-1998.csv")
+    columns_to_plot = [
+        "P90-100", "P90-95", "P95-99", "P99-100",
+        "P99.5-100", "P99.9-100", "P99.99-100"
+    ]
 
-# Add each column as a separate line
-for col in columns_to_plot:
-    income_shares.add_trace(go.Scatter(x=income["year"], y=income[col],
+    income_shares = go.Figure()
+
+    for col in columns_to_plot:
+        income_shares.add_trace(go.Scatter(x=income["year"], y=income[col],
                              mode='lines+markers',
                              name=col))
 
-# Customize Layout
-income_shares.update_layout(
-    title="Top Income Shares by Percentage",
-    xaxis_title="Year",
-    yaxis_title="Income Share (%)",
-    template="plotly_white",
-    hovermode="x"
-)
+    income_shares.update_layout(
+        title="Top Income Shares by Percentage",
+        xaxis_title="Year",
+        yaxis_title="Income Share (%)",
+        template="plotly_white",
+        hovermode="x"
+    )
+    return income_shares
 
-# End Income Shares By Percentage Graph
 
-# Start Income by Area Graph
+# Define the Income by Area Graph as a function
+def get_income_by_area_graph():
+    area_df = pd.read_csv("https://raw.githubusercontent.com/ryanfernald/Value-Voyage-A-Journey-Through-Decades-of-Prices/refs/heads/main/data/income-by-area.csv")
+    regions = ["United States *", "Mideast", "Great Lakes", "Plains",
+               "Southeast", "Southwest", "Rocky Mountain", "Far West *"]
 
-area_df = pd.read_csv("https://raw.githubusercontent.com/ryanfernald/Value-Voyage-A-Journey-Through-Decades-of-Prices/refs/heads/main/data/income-by-area.csv")
+    income_area = go.Figure()
 
-# Define the columns to plot
-regions = ["United States *", "Mideast", "Great Lakes", "Plains",
-           "Southeast", "Southwest", "Rocky Mountain", "Far West *"]
+    for region in regions:
+        income_area.add_trace(go.Scatter(
+            x=area_df["Year"],
+            y=area_df[region],
+            mode="lines",
+            name=region
+        ))
 
-# Create a Plotly figure
-income_area = go.Figure()
+    income_area.update_layout(
+        title="Regional Income Trends Over Time",
+        xaxis_title="Year",
+        yaxis_title="Income Value",
+        legend_title="Regions",
+        hovermode="x"
+    )
+    return income_area
 
-# Add a line for each region
-for region in regions:
-    income_area.add_trace(go.Scatter(
-        x=area_df["Year"],
-        y=area_df[region],
-        mode="lines",
-        name=region
-    ))
-
-# Update layout for clarity
-income_area.update_layout(
-    title="Regional Income Trends Over Time",
-    xaxis_title="Year",
-    yaxis_title="Income Value",
-    legend_title="Regions",
-    hovermode="x"
-)
-
-# End Income by Area Graph
 
 # Define the layout for the analysis page
 layout = dbc.Container(
@@ -129,7 +126,7 @@ layout = dbc.Container(
                     width=6
                 ),
                 dbc.Col(
-                    dcc.Graph(id="price-trends-graph", figure=goods_prices_graph),
+                    dcc.Graph(id="price-trends-graph", figure=get_goods_prices_graph()),  # Call the function
                     width=6
                 )
             ]
@@ -137,7 +134,7 @@ layout = dbc.Container(
         dbc.Row(
             [
                 dbc.Col(
-                    dcc.Graph(id="income-averages-graph", figure=income_graph_fig),  # Placeholder for second graph
+                    dcc.Graph(id="income-averages-graph", figure=get_income_averages_graph()),  # Call the function
                     width=6
                 ),
                 dbc.Col(
@@ -161,7 +158,7 @@ layout = dbc.Container(
                     width=6
                 ),
                 dbc.Col(
-                    dcc.Graph(id="Income Shares", figure=income_shares), 
+                    dcc.Graph(id="income-shares-graph", figure=get_income_shares_graph()),  # Call the function
                     width=6
                 ),
             ]
@@ -169,7 +166,7 @@ layout = dbc.Container(
         dbc.Row(
             [
                 dbc.Col(
-                    dcc.Graph(id="Income-Area", figure=income_area),
+                    dcc.Graph(id="income-area-graph", figure=get_income_by_area_graph()),  # Call the function
                     width=6
                 ),
                 dbc.Col(
