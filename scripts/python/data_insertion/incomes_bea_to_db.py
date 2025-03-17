@@ -42,6 +42,6 @@ def process_csv(csv_path):
 
 
 if __name__ == "__main__":
-    csv_path = r"../../data/raw/input_data_csv/incomes/bea_incomes.csv"
+    csv_path = r"../../../data/raw/input_data_csv/incomes/bea_incomes.csv"
     print(f"Processing {csv_path}")
     process_csv(csv_path)

@@ -1,14 +1,12 @@
 import glob
 import os
-
-import numpy as np
 import pandas as pd
 from src.functions.db import bulk_insert_incomes
 
 
 def process_csv(csv_path):
     required_columns = [
-        'year', 'average_income_unadjusted'
+        'year', 'inflation_cpi', 'tax_units', 'average_income_adjusted'
     ]
 
     df = pd.read_csv(csv_path)
@@ -27,17 +25,24 @@ def process_csv(csv_path):
     except Exception:
         raise ValueError("The 'year' column must be numeric (integer).")
 
+    # Ensure numeric conversion for required columns.
+    df['average_income_adjusted'] = pd.to_numeric(df['average_income_adjusted'], errors='coerce')
+    df['inflation_cpi'] = pd.to_numeric(df['inflation_cpi'], errors='coerce')
+    df['tax_units'] = pd.to_numeric(df['tax_units'], errors='coerce')
+
+    # Calculate average_income_adjusted = average_income_unadjusted * inflation_cpi.
+    df['average_income_unadjusted'] = df['average_income_adjusted'] / df['inflation_cpi']
+
+    # Multiply tax_units by 1000.
+    df['tax_units'] = df['tax_units'] * 1000
 
     # Drop rows where critical numeric values are missing.
-    # df.dropna(subset=['year', 'average_income_unadjusted', 'inflation_cpi', 'tax_units'], inplace=True)
+    df.dropna(subset=['year', 'average_income_unadjusted', 'inflation_cpi', 'tax_units'], inplace=True)
 
     # Set additional required columns.
-    df['source_name'] = 'FRED'
-    df['source_link'] = 'https://fred.stlouisfed.org/series/A792RC0A052NBEA'
+    df['source_name'] = 'IRS'
+    df['source_link'] = 'https://eml.berkeley.edu/~saez/pikettyqje.pdf'
     df['region'] = 'united states'
-    df['average_income_adjusted'] = np.nan
-    df['tax_units'] = np.nan
-    df['inflation_cpi'] = np.nan
 
     df.to_csv('ahan.csv', index=False)
     result = bulk_insert_incomes(df)
@@ -45,6 +50,6 @@ def process_csv(csv_path):
 
 
 if __name__ == "__main__":
-    csv_path = r"../../data/raw/input_data_csv/incomes/fred_incomes.csv"
+    csv_path = r"../../../data/raw/input_data_csv/incomes/irs_incomes.csv"
     print(f"Processing {csv_path}")
     process_csv(csv_path)
