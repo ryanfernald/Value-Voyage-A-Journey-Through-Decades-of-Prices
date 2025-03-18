@@ -45,10 +45,6 @@ def fetch_incomes(db_path, year_range=(1990, 2000), data_source_name='FRED', reg
         return json_output
 
 
-import sqlite3
-import pandas as pd
-import json
-
 def fetch_goods_prices(db_path, year_range=(1990, 2000), goods_list=None, use_year_averages=True, output_format='df'):
     """
     Fetches goods prices from an SQLite database for a given year range and optional goods filter.
@@ -99,6 +95,7 @@ def fetch_goods_prices(db_path, year_range=(1990, 2000), goods_list=None, use_ye
 
         # Keep only the latest entry per good per year
         df_unique = df.sort_values('date', ascending=False).drop_duplicates(subset=['name', 'year'], keep='first')
+        connection.close()
 
         if output_format == 'df':
             df_unique.reset_index(drop=True, inplace=True)
@@ -109,8 +106,6 @@ def fetch_goods_prices(db_path, year_range=(1990, 2000), goods_list=None, use_ye
             raise ValueError("Output formats supported: 'df' or 'json'")
     except sqlite3.Error as e:
         return json.dumps({"error": str(e)})
-    finally:
-        connection.close()
 
 
 def fetch_final_goods_affordable(db_path, year_range=(1990, 2000), goods_list=None, regions=None, income_data_source='FRED', salary_interval='monthly', output_format='df'):

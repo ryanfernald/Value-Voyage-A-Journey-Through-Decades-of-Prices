@@ -13,7 +13,7 @@ DB_USER = os.getenv('DB_USER')
 DB_PASSWORD = os.getenv('DB_PASSWORD')
 DB_NAME = os.getenv('DB_NAME')
 
-dump_file = '../../../data/db/dumps/mysql_dump.sql'
+dump_file = '../../../data/db/mysql/mysql_dump.sql'
 
 # Step 1: Dump the MySQL database to a file using mysqldump.
 cmd = [

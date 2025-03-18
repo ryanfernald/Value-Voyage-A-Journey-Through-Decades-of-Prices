@@ -4,40 +4,50 @@ from dash import dcc, html
 import pandas as pd
 import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
-from src.functions.db import fetch_good_prices
+from src.functions.db.fetch import fetch_goods_prices
 
 # Define the Goods Prices Graph as a function
 def get_goods_prices_graph():
-    # goods = pd.read_csv("https://raw.githubusercontent.com/ryanfernald/Value-Voyage-A-Journey-Through-Decades-of-Prices/refs/heads/main/data/good-prices.csv")
-    goods = fetch_good_prices(output_format="df")
-    print(goods)
-    goods = goods.sort_values("Date", ascending=True)
+    goods = fetch_goods_prices(
+        db_path='data/db/sqlite/database.sqlite',
+        year_range=(1890, 2025),
+        goods_list=None,
+        use_year_averages=True,
+        output_format='df'
+    )
+
+    goods = goods.sort_values("date", ascending=True).dropna(subset=['price', 'date'])
 
     goods_prices_graph = go.Figure()
 
-    for good_name in goods["Good Name"].unique():
-        filtered_data = goods[goods["Good Name"] == good_name]
+    for good_name in goods["name"].unique():
+        filtered_data = goods[goods["name"] == good_name]
+
+        x_values = filtered_data["year"].astype(int).tolist()
+        y_values = filtered_data["price"].astype(float).tolist()
+
         goods_prices_graph.add_trace(go.Scatter(
-            x=filtered_data["Date"], 
-            y=filtered_data["Price"], 
-            mode="lines",  
-            name=good_name  
+            x=x_values,
+            y=y_values,
+            mode="lines+markers",
+            name=str(good_name)
         ))
 
     goods_prices_graph.update_layout(
         title="Price Trends Over Time",
-        xaxis_title="Date",
+        xaxis_title="Year",
         yaxis_title="Price",
         title_font_size=16,
-        xaxis=dict(tickangle=45), 
-        hovermode="x unified"  
+        xaxis=dict(tickangle=45),
+        hovermode="x unified"
     )
     return goods_prices_graph
 
 
+
 # Define the Income Average Graph as a function
 def get_income_averages_graph():
-    income = pd.read_csv("https://raw.githubusercontent.com/ryanfernald/Value-Voyage-A-Journey-Through-Decades-of-Prices/refs/heads/main/data/income1913-1998.csv")
+    income = pd.read_csv("https://raw.githubusercontent.com/ryanfernald/Value-Voyage-A-Journey-Through-Decades-of-Prices/refs/heads/main/data/ryans_data/income1913-1998.csv")
 
     income_graph_fig = go.Figure()
 
@@ -65,7 +75,7 @@ def get_income_averages_graph():
 
 # Define the Income Shares By Percentage Graph as a function
 def get_income_shares_graph():
-    income = pd.read_csv("https://raw.githubusercontent.com/ryanfernald/Value-Voyage-A-Journey-Through-Decades-of-Prices/refs/heads/main/data/income1913-1998.csv")
+    income = pd.read_csv("https://raw.githubusercontent.com/ryanfernald/Value-Voyage-A-Journey-Through-Decades-of-Prices/refs/heads/main/data/ryans_data/income1913-1998.csv")
     columns_to_plot = [
         "P90-100", "P90-95", "P95-99", "P99-100",
         "P99.5-100", "P99.9-100", "P99.99-100"
@@ -90,7 +100,7 @@ def get_income_shares_graph():
 
 # Define the Income by Area Graph as a function
 def get_income_by_area_graph():
-    area_df = pd.read_csv("https://raw.githubusercontent.com/ryanfernald/Value-Voyage-A-Journey-Through-Decades-of-Prices/refs/heads/main/data/income-by-area.csv")
+    area_df = pd.read_csv("https://raw.githubusercontent.com/ryanfernald/Value-Voyage-A-Journey-Through-Decades-of-Prices/refs/heads/main/data/ryans_data/income-by-area.csv")
     regions = ["United States *", "Mideast", "Great Lakes", "Plains",
                "Southeast", "Southwest", "Rocky Mountain", "Far West *"]
 
