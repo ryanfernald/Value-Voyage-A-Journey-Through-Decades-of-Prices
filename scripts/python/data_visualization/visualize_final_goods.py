@@ -168,7 +168,7 @@ def plot_incomes_inf_final_goods():
         plt.legend()
 
     # Save the graph as a PNG file.
-    plt.savefig("../../../doc/figures/affordable_quantity_1929_2024_fred_incomes_sample.png")
+    plt.savefig("../../../doc/figures/affordable_quantity_1929_2024_fred_incomes_sample_test.png")
 
     plt.show()
 

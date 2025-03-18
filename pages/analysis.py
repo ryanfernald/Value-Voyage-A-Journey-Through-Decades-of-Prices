@@ -4,11 +4,13 @@ from dash import dcc, html
 import pandas as pd
 import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
-
+from src.functions.db import fetch_good_prices
 
 # Define the Goods Prices Graph as a function
 def get_goods_prices_graph():
-    goods = pd.read_csv("https://raw.githubusercontent.com/ryanfernald/Value-Voyage-A-Journey-Through-Decades-of-Prices/refs/heads/main/data/good-prices.csv")
+    # goods = pd.read_csv("https://raw.githubusercontent.com/ryanfernald/Value-Voyage-A-Journey-Through-Decades-of-Prices/refs/heads/main/data/good-prices.csv")
+    goods = fetch_good_prices(output_format="df")
+    print(goods)
     goods = goods.sort_values("Date", ascending=True)
 
     goods_prices_graph = go.Figure()
