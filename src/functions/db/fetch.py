@@ -45,68 +45,72 @@ def fetch_incomes(db_path, year_range=(1990, 2000), data_source_name='FRED', reg
         return json_output
 
 
+import sqlite3
+import pandas as pd
+import json
+
 def fetch_goods_prices(db_path, year_range=(1990, 2000), goods_list=None, use_year_averages=True, output_format='df'):
     """
-    Fetches goods prices from an SQLite database for a given year range and an optional list of goods.
-
-    If use_year_averages is True, only the July 2nd entries (which already contain the average values)
-    are fetched for every year. Otherwise, all entries except those on July 2nd are fetched.
+    Fetches goods prices from an SQLite database for a given year range and optional goods filter.
+    For years with multiple entries per good, only the latest date entry per year is retained.
 
     Args:
-        year_range (tuple): (start_year, end_year) for filtering by year.
-        goods_list (list or None): List of good names to filter on; if None, no filtering is applied.
-        use_year_averages (bool): If True, fetch only July 2nd entries; if False, fetch all entries excluding July 2nd.
-        output_format (str): 'df' returns a Pandas DataFrame (pivoted for averages), 'json' returns a JSON string.
+        db_path (str): Path to SQLite database.
+        year_range (tuple): (start_year, end_year) for filtering.
+        goods_list (list or None): List of good names; None fetches all goods.
+        use_year_averages (bool): If True, fetch only July 2nd entries; else exclude July 2nd entries.
+        output_format (str): 'df' returns DataFrame, 'json' returns JSON.
 
     Returns:
-        Either a Pandas DataFrame or a JSON string with the resulting data.
-        :rtype: df
+        DataFrame or JSON string.
     """
     try:
         connection = sqlite3.connect(db_path)
         connection.row_factory = sqlite3.Row
-        cursor = connection.cursor()
 
         start_year, end_year = year_range
         params = [start_year, end_year]
-        where_clause = "WHERE CAST(strftime('%Y', date) AS INTEGER) BETWEEN ? AND ?"
+
+        where_conditions = [
+            "CAST(strftime('%Y', date) AS INTEGER) BETWEEN ? AND ?"
+        ]
 
         if goods_list:
             placeholders = ','.join('?' for _ in goods_list)
-            where_clause += f" AND name IN ({placeholders})"
+            where_conditions.append(f"name IN ({placeholders})")
             params.extend(goods_list)
 
         if use_year_averages:
-            where_clause += " AND strftime('%m', date) = '07' AND strftime('%d', date) = '02'"
+            where_conditions.append("strftime('%m-%d', date) = '07-02'")
         else:
-            where_clause += " AND NOT (strftime('%m', date) = '07' AND strftime('%d', date) = '02')"
+            where_conditions.append("strftime('%m-%d', date) != '07-02'")
+
+        where_clause = ' AND '.join(where_conditions)
 
         query = f"""
-            SELECT *
+            SELECT name, price, date, good_unit, data_source
             FROM goods_prices
-            {where_clause}
-            ORDER BY date ASC;
+            WHERE {where_clause}
+            ORDER BY name ASC, date DESC
         """
 
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-        results = [dict(row) for row in rows]
+        df = pd.read_sql_query(query, connection, params=params)
+        df['year'] = pd.to_datetime(df['date']).dt.year
+
+        # Keep only the latest entry per good per year
+        df_unique = df.sort_values('date', ascending=False).drop_duplicates(subset=['name', 'year'], keep='first')
 
         if output_format == 'df':
-            df = pd.DataFrame(results)
-            df['year'] = df['date'].apply(lambda d: int(d[:4]) if isinstance(d, str) else d.year)
-            return df
+            df_unique.reset_index(drop=True, inplace=True)
+            return df_unique
         elif output_format == 'json':
-            return json.dumps(results)
+            return df_unique.to_json(orient='records', date_format='iso')
         else:
             raise ValueError("Output formats supported: 'df' or 'json'")
     except sqlite3.Error as e:
         return json.dumps({"error": str(e)})
     finally:
-        if 'cursor' in locals():
-            cursor.close()
-        if 'connection' in locals():
-            connection.close()
+        connection.close()
 
 
 def fetch_final_goods_affordable(db_path, year_range=(1990, 2000), goods_list=None, regions=None, income_data_source='FRED', salary_interval='monthly', output_format='df'):

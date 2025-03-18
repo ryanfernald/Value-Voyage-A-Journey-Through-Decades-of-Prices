@@ -44,7 +44,7 @@ if __name__ == "__main__":
     plot_incomes_inf_final_goods(
         db_path='../../../data/db/sqlite/database.sqlite',
         year_range=(1929, 2024),
-        goods_list=['bacon', 'bread', 'butter', 'coffee', 'eggs', 'flour', 'milk', 'pork chop', 'round steak', 'sugar'],
+        goods_list=['bacon', 'bread', 'butter', 'coffee', 'eggs', 'flour', 'milk', 'pork chop', 'round steak', 'sugar', 'gas'],
         regions=['united states'],
         income_data_source='FRED',
         salary_interval='monthly',
