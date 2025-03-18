@@ -45,12 +45,7 @@ def fetch_incomes(db_path, year_range=(1990, 2000), data_source_name='BEA', regi
         return json_output
 
 
-import sqlite3
-import pandas as pd
-import json
-
-
-def fetch_goods_prices(year_range=(1990, 2000), goods_list=None, use_year_averages=True, output_format='df'):
+def fetch_goods_prices(db_path, year_range=(1990, 2000), goods_list=None, use_year_averages=True, output_format='df'):
     """
     Fetches goods prices from an SQLite database for a given year range and an optional list of goods.
 
@@ -67,7 +62,7 @@ def fetch_goods_prices(year_range=(1990, 2000), goods_list=None, use_year_averag
         Either a Pandas DataFrame or a JSON string with the resulting data.
     """
     try:
-        connection = sqlite3.connect('your_sqlite_database.sqlite')
+        connection = sqlite3.connect(db_path)
         connection.row_factory = sqlite3.Row
         cursor = connection.cursor()
 
@@ -98,15 +93,8 @@ def fetch_goods_prices(year_range=(1990, 2000), goods_list=None, use_year_averag
 
         if output_format == 'df':
             df = pd.DataFrame(results)
-            if use_year_averages and not df.empty:
-                # Pivot the DataFrame: each good becomes a column, indexed by the year (extracted from the date).
-                df['year'] = df['date'].apply(lambda d: int(d[:4]) if isinstance(d, str) else d.year)
-                df_pivot = df.pivot(index='year', columns='name', values='price')
-                return df_pivot
-            else:
-                if not df.empty and 'date' in df.columns:
-                    df['date'] = pd.to_datetime(df['date'])
-                return df
+            df['year'] = df['date'].apply(lambda d: int(d[:4]) if isinstance(d, str) else d.year)
+            return df
         elif output_format == 'json':
             return json.dumps(results)
         else:
@@ -125,11 +113,21 @@ def fetch_purchasing_powers(year_range=(1990, 2000), goods_list=None, income_dat
 
 if __name__ == '__main__':
 
-    data = fetch_incomes(
-        db_path='../../../data/db/sqlite/database.sqlite',
-        year_range=(1929, 2024),
-        data_source_name='FRED',
-        regions=['united states'],
+    db_path = '../../../data/db/sqlite/database.sqlite'
+    #
+    # data = fetch_incomes(
+    #     db_path=db_path,
+    #     year_range=(1929, 2024),
+    #     data_source_name='FRED',
+    #     regions=['united states'],
+    #     output_format='df'
+    # )
+
+    data = fetch_goods_prices(
+        db_path=db_path,
+        year_range=(1990, 2000),
+        goods_list=['sugar', 'pork chop'],
+        use_year_averages=True,
         output_format='df'
     )
 
