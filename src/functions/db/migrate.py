@@ -83,7 +83,7 @@ for stmt in statements:
     # Other statements (like SET, DROP, etc.) can be skipped or handled as needed.
 
 # Connect to (or create) the SQLite database.
-sqlite_conn = sqlite3.connect('../../../data/db/sqlite/converted_database.sqlite')
+sqlite_conn = sqlite3.connect('../../../data/db/sqlite/database.sqlite')
 cursor = sqlite_conn.cursor()
 
 print("Processing SQL statements and creating SQLite database...")
