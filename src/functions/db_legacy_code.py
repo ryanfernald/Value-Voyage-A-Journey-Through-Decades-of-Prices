@@ -412,6 +412,6 @@ def get_connection():
     )
     return connection
 
-
+# LEGACY CODE WARNING
 if __name__ == "__main__":
     pass
