@@ -3,7 +3,7 @@ import json
 import pandas as pd
 
 
-def fetch_incomes(db_path, year_range=(1990, 2000), data_source_name='BEA', regions=None, output_format='df'):
+def fetch_incomes(db_path, year_range=(1990, 2000), data_source_name='FRED', regions=None, output_format='df'):
     import sqlite3
     import pandas as pd
     import json
@@ -60,6 +60,7 @@ def fetch_goods_prices(db_path, year_range=(1990, 2000), goods_list=None, use_ye
 
     Returns:
         Either a Pandas DataFrame or a JSON string with the resulting data.
+        :rtype: df
     """
     try:
         connection = sqlite3.connect(db_path)
@@ -108,26 +109,70 @@ def fetch_goods_prices(db_path, year_range=(1990, 2000), goods_list=None, use_ye
             connection.close()
 
 
-def fetch_purchasing_powers(year_range=(1990, 2000), goods_list=None, income_data_source='BEA', use_salary_interval='mounthly', use_year_averages=True, output_format='df'):
-    pass
+def fetch_final_goods_affordable(db_path, year_range=(1990, 2000), goods_list=None, regions=None, income_data_source='FRED', salary_interval='monthly', output_format='df'):
+        incomes_df = fetch_incomes(
+            db_path,
+            year_range=year_range,
+            data_source_name=income_data_source,
+            regions=regions,
+            output_format='df'
+        )
+
+        goods_df = fetch_goods_prices(
+            db_path,
+            year_range=year_range,
+            goods_list=goods_list,
+            use_year_averages=True,
+            output_format='df'
+        )
+
+        merged_df = pd.merge(goods_df, incomes_df, on='year', how='inner')
+
+
+        if salary_interval == 'monthly':
+            merged_df['final_goods_affordable'] = (merged_df['average_income_unadjusted'] / 12) / merged_df['price']
+        elif salary_interval == 'annually':
+            merged_df['final_goods_affordable'] = merged_df['average_income_unadjusted'] / merged_df['price']
+
+        merged_df['final_goods_affordable'] = merged_df['final_goods_affordable'].astype(int)
+
+        merged_df = merged_df[['name', 'final_goods_affordable', 'good_unit', 'date', 'year', 'region']]
+
+        if output_format == 'df':
+            return merged_df
+        else:
+            return json.dumps(merged_df.to_dict(orient='records'))
+
 
 if __name__ == '__main__':
 
     db_path = '../../../data/db/sqlite/database.sqlite'
-    #
+
+    # fetch incomes sample use
     # data = fetch_incomes(
     #     db_path=db_path,
     #     year_range=(1929, 2024),
     #     data_source_name='FRED',
-    #     regions=['united states'],
+    #     regions=['united states', 'new york'],
     #     output_format='df'
     # )
 
-    data = fetch_goods_prices(
-        db_path=db_path,
+    # fetch goods prices sample use
+    # data = fetch_goods_prices(
+    #     db_path=db_path,
+    #     year_range=(1990, 2000),
+    #     goods_list=['sugar', 'pork chop'],
+    #     use_year_averages=True,
+    #     output_format='df'
+    # )
+
+    data = fetch_final_goods_affordable(
+        db_path,
         year_range=(1990, 2000),
         goods_list=['sugar', 'pork chop'],
-        use_year_averages=True,
+        regions=['united states'],
+        income_data_source='FRED',
+        salary_interval='monthly',
         output_format='df'
     )
 
