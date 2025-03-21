@@ -1,9 +1,8 @@
-from matplotlib import pyplot as plt
+from plotly.graph_objects import Figure, Scatter
 from src.functions.db.fetch import fetch_final_goods_affordable
 
 
 def plot_incomes_inf_final_goods(db_path, year_range, goods_list, regions, income_data_source, salary_interval, output_format):
-
     df = fetch_final_goods_affordable(
         db_path=db_path,
         year_range=year_range,
@@ -14,39 +13,40 @@ def plot_incomes_inf_final_goods(db_path, year_range, goods_list, regions, incom
         output_format=output_format
     )
 
-    plt.figure(figsize=(20, 10))
+    fig = Figure()
 
     if df['year'].nunique() == 1:
+        # If only one year, create a bar chart
         labels = [f"{name} ({unit})" for name, unit in zip(df['name'], df['good_unit'])]
-        plt.bar(labels, df['final_goods_affordable'])
-        plt.xlabel("Good (Unit)")
-        plt.ylabel("Affordable Quantity")
-        plt.title(f"Affordable Quantity in {df['year'].iloc[0]}")
+        fig.add_trace(Scatter(x=labels, y=df['final_goods_affordable'], mode='markers', name='Affordable Quantity'))
+        fig.update_layout(
+            title=f"Affordable Quantity in {df['year'].iloc[0]}",
+            xaxis_title="Good (Unit)",
+            yaxis_title="Affordable Quantity"
+        )
     else:
+        # If multiple years, create a line chart
         for (good, unit), group in df.groupby(['name', 'good_unit']):
-            plt.plot(
-                group['year'],
-                group['final_goods_affordable'],
-                marker='o',
-                label=f"{good} ({unit.strip("$/")})"
-            )
-        plt.xlabel("Year")
-        plt.ylabel("Affordable Quantity")
-        plt.title(f"Affordable Quantity Over Years ({income_data_source} Incomes)")
-        plt.legend()
+            fig.add_trace(Scatter(x=group['year'], y=group['final_goods_affordable'], mode='lines+markers', name=f"{good} ({unit})"))
+        fig.update_layout(
+            title=f"Affordable Quantity Over Years ({income_data_source} Incomes)",
+            xaxis_title="Year",
+            yaxis_title="Affordable Quantity",
+            legend_title="Goods",
+            hovermode="x unified"
+        )
 
-    filename = f"../../../doc/figures/affordable_quantity_{year_range[0]}_{year_range[1]}_{income_data_source.lower()}_incomes.png"
-    plt.savefig(filename)
-    plt.show()
+    return fig
 
 
 if __name__ == "__main__":
-    plot_incomes_inf_final_goods(
+    fig = plot_incomes_inf_final_goods(
         db_path='../../../data/db/sqlite/database.sqlite',
         year_range=(1929, 2024),
         goods_list=['bacon', 'bread', 'butter', 'coffee', 'eggs', 'flour', 'milk', 'pork chop', 'round steak', 'sugar', 'gas'],
         regions=['united states'],
         income_data_source='FRED',
         salary_interval='monthly',
-        output_format='df',
+        output_format='df'
     )
+    fig.show()

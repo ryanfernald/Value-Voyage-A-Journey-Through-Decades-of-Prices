@@ -5,6 +5,9 @@ import pandas as pd
 import plotly.graph_objects as go
 import dash_bootstrap_components as dbc
 from src.functions.db.fetch import fetch_goods_prices
+from src.functions.db.fetch import fetch_bea_incomes
+from scripts.python.data_visualization.visualize_final_goods import plot_incomes_inf_final_goods
+
 
 # Define the Goods Prices Graph as a function
 def get_goods_prices_graph():
@@ -29,7 +32,7 @@ def get_goods_prices_graph():
         goods_prices_graph.add_trace(go.Scatter(
             x=x_values,
             y=y_values,
-            mode="lines+markers",
+            mode="lines",
             name=str(good_name)
         ))
 
@@ -43,7 +46,29 @@ def get_goods_prices_graph():
     )
     return goods_prices_graph
 
+# Define the Affordable Goods Graph as a function
+def get_affordable_goods_graph():
+    return plot_incomes_inf_final_goods(
+        db_path='data/db/sqlite/database.sqlite',
+        year_range=(1929, 2024),
+        goods_list=['bacon', 'bread', 'butter', 'coffee', 'eggs', 'flour', 'milk', 'pork chop', 'round steak', 'sugar', 'gas'],
+        regions=['united states'],
+        income_data_source='FRED',
+        salary_interval='monthly',
+        output_format='df'
+    )
 
+# Affordable goods wihtout floud and sugar
+def get_affordable_goods_graph_no_flower_sugar():
+    return plot_incomes_inf_final_goods(
+        db_path='data/db/sqlite/database.sqlite',
+        year_range=(1929, 2024),
+        goods_list=['bacon', 'bread', 'butter', 'coffee', 'eggs', 'milk', 'pork chop', 'round steak', 'gas'],
+        regions=['united states'],
+        income_data_source='FRED',
+        salary_interval='monthly',
+        output_format='df'
+    )
 
 # Define the Income Average Graph as a function
 def get_income_averages_graph():
@@ -100,16 +125,21 @@ def get_income_shares_graph():
 
 # Define the Income by Area Graph as a function
 def get_income_by_area_graph():
-    area_df = pd.read_csv("https://raw.githubusercontent.com/ryanfernald/Value-Voyage-A-Journey-Through-Decades-of-Prices/refs/heads/main/data/ryans_data/income-by-area.csv")
-    regions = ["United States *", "Mideast", "Great Lakes", "Plains",
-               "Southeast", "Southwest", "Rocky Mountain", "Far West *"]
+    db_path = 'data/db/sqlite/database.sqlite'
+    area_df = fetch_bea_incomes(db_path)
+
+    regions = ["united states *", "mideast", "great lakes", "plains",
+               "southeast", "southwest", "rocky mountain", "far west *"]
 
     income_area = go.Figure()
 
     for region in regions:
-        income_area.add_trace(go.Scatter(
-            x=area_df["Year"],
-            y=area_df[region],
+        filtered_data = area_df[area_df['region'] == region]
+        income_area.add_trace(go.Scatter( 
+
+            x=filtered_data["year"].astype(int).tolist(),
+            y=filtered_data["average_income_unadjusted"].astype(int).tolist(),
+
             mode="lines",
             name=region
         ))
@@ -121,6 +151,7 @@ def get_income_by_area_graph():
         legend_title="Regions",
         hovermode="x"
     )
+
     return income_area
 
 
@@ -135,27 +166,41 @@ layout = dbc.Container(
                         html.H2("Data Source:"),
                         html.P("This is a detailed explanation of the analysis. It can include multiple paragraphs and should provide context for the visualizations.")
                     ]),
-                    width=6
+                    width=5
                 ),
                 dbc.Col(
                     dcc.Graph(id="price-trends-graph", figure=get_goods_prices_graph()),  # Call the function
-                    width=6
+                    width=7
                 )
             ]
         ),
         dbc.Row(
             [
                 dbc.Col(
-                    dcc.Graph(id="income-averages-graph", figure=get_income_averages_graph()),  # Call the function
-                    width=6
+                    dcc.Graph(id="affordable-goods-graph", figure=get_affordable_goods_graph()),  # Call the function
+                    width=7
                 ),
                 dbc.Col(
                     html.Div([
-                        html.H1("Income Average"),
+                        html.H1("Affordable Quantity of Goods over a Century"),
                         html.H2("Data Source:"),
                         html.P("Additional context or insights related to the second graph.")
                     ]),
-                    width=6
+                    width=5
+                )
+            ]
+        ),
+        dbc.Row(
+            [
+                dbc.Col(
+                    dcc.Graph(id="affordable-goods-graph", figure=get_affordable_goods_graph_no_flower_sugar()),  # Call the function
+                    width=7
+                ),
+                dbc.Col(
+                    html.Div([
+                        html.H1("Same Graph as Above without flower and sugar"),
+                    ]),
+                    width=5
                 )
             ]
         ),
@@ -167,11 +212,11 @@ layout = dbc.Container(
                         html.H2("Data Source:"),
                         html.P("Additional context or insights related to the third graph.")
                     ]),
-                    width=6
+                    width=5
                 ),
                 dbc.Col(
                     dcc.Graph(id="income-shares-graph", figure=get_income_shares_graph()),  # Call the function
-                    width=6
+                    width=7
                 ),
             ]
         ),
@@ -179,7 +224,7 @@ layout = dbc.Container(
             [
                 dbc.Col(
                     dcc.Graph(id="income-area-graph", figure=get_income_by_area_graph()),  # Call the function
-                    width=6
+                    width=7
                 ),
                 dbc.Col(
                     html.Div([
@@ -187,7 +232,7 @@ layout = dbc.Container(
                         html.H2("Data Source:"),
                         html.P("Additional context or insights related to the second graph.")
                     ]),
-                    width=6
+                    width=5
                 )
             ]
         )

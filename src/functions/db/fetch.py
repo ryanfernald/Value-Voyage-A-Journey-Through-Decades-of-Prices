@@ -142,6 +142,17 @@ def fetch_final_goods_affordable(db_path, year_range=(1990, 2000), goods_list=No
         else:
             return json.dumps(merged_df.to_dict(orient='records'))
 
+def fetch_bea_incomes(db_path):
+    connection = sqlite3.connect(db_path)
+    query = """
+        SELECT year, average_income_unadjusted, region, source_name
+        FROM incomes
+        WHERE source_name = 'BEA'
+        ORDER BY year;
+    """
+    df = pd.read_sql_query(query, connection)
+    connection.close()
+    return df
 
 if __name__ == '__main__':
 
@@ -165,14 +176,16 @@ if __name__ == '__main__':
     #     output_format='df'
     # )
 
-    data = fetch_final_goods_affordable(
-        db_path,
-        year_range=(1990, 2000),
-        goods_list=['sugar', 'pork chop'],
-        regions=['united states'],
-        income_data_source='FRED',
-        salary_interval='monthly',
-        output_format='df'
-    )
+    # data = fetch_final_goods_affordable(
+    #     db_path,
+    #     year_range=(1990, 2000),
+    #     goods_list=['sugar', 'pork chop'],
+    #     regions=['united states'],
+    #     income_data_source='FRED',
+    #     salary_interval='monthly',
+    #     output_format='df'
+    # )
+
+    data = fetch_bea_incomes(db_path)
 
     print(data)
